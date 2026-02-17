@@ -10,7 +10,7 @@ function App() {
         {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
           <div className="p-6 border-b border-gray-50">
-            <h1 className="text-xl font-bold text-gray-800">KIS Manager</h1>
+            <h1 className="text-xl font-bold text-gray-800 text-center tracking-tight">AssetManager</h1>
           </div>
           <nav className="flex-1 p-4 space-y-2">
             <NavLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />

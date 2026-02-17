@@ -1,4 +1,4 @@
-# 📈 KIS AssetManager & Automated Trader
+# 📈 AssetManager & Automated Trader
 
 한국투자증권(KIS) OpenAPI를 활용한 통합 자산 관리 및 자동 매매 시스템입니다. 국내/해외 주식의 잔고 현황을 실시간으로 모니터링하고, 설정한 실시간 전략에 따라 자동으로 주문을 실행합니다.
 
