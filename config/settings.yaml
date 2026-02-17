@@ -1,0 +1,6 @@
+presentation:
+  currency: KRW
+
+api:
+  base_url: "https://openapi.koreainvestment.com:9443"
+  # base_url_test: "https://openapivts.koreainvestment.com:29443" # For paper trading (mock)

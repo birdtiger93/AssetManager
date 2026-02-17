@@ -1,0 +1,12 @@
+config/secrets.yaml
+token.dat
+token.json
+__pycache__/
+*.pyc
+.env
+.venv
+node_modules/
+dist/
+.DS_Store
+data/assets.db
+coverage/

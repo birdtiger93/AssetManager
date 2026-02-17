@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: kis_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./token.json:/app/token.json  # Persist token
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: kis_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always

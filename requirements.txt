@@ -1,0 +1,9 @@
+requests
+pandas
+pyyaml
+sqlalchemy
+fastapi
+uvicorn
+apscheduler
+pydantic
+python-multipart
