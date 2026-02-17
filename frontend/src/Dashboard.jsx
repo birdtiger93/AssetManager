@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { LayoutDashboard, TrendingUp, DollarSign, Wallet, Coins } from 'lucide-react';
 
+
 const API_BASE = "http://127.0.0.1:8000";
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -40,8 +43,13 @@ const Dashboard = () => {
 
     // 1. Data by Individual Stocks
     const stockData = [
-        ...holdings.overseas.map(h => ({ ...h, value_krw: h.current_price * h.quantity * 1400 })), // Approx exchange rate if not provided, or use logic from before if available
-        ...holdings.domestic.map(h => ({ ...h, value_krw: h.current_price * h.quantity }))
+        ...holdings.overseas.map(h => ({ ...h, value_krw: h.current_price * h.quantity * 1400 })),
+        ...holdings.domestic.map(h => ({ ...h, value_krw: h.current_price * h.quantity })),
+        ...(holdings.manual ? holdings.manual.map(h => ({
+            ...h,
+            value_krw: h.currency === 'USD' ? h.current_price * h.quantity * 1400 : h.current_price * h.quantity
+        })) : []),
+        ...(holdings.cash ? holdings.cash.map(h => ({ ...h, value_krw: h.current_price })) : []) // Add Cash Assets here
     ].filter(a => a.value_krw > 0).sort((a, b) => b.value_krw - a.value_krw);
 
     // Note: Exchange rate hardcoding is risky, but backend provides classification in KRW.
@@ -55,7 +63,7 @@ const Dashboard = () => {
         value: s.value_krw,
         color: CHART_COLORS[idx % CHART_COLORS.length],
         symbol: s.symbol,
-        currency: s.currency
+        currency: s.currency || 'KRW'
     }));
 
     if (stockData.length > 10) {
@@ -127,6 +135,7 @@ const Dashboard = () => {
                     icon={<TrendingUp size={24} />}
                     bg="bg-gradient-to-br from-orange-400 to-rose-500"
                     textColor="text-white"
+                    onClick={() => navigate('/profit-loss')}
                 />
                 <SummaryCard
                     title="Total Stocks (KRW)"
@@ -240,6 +249,9 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+
+
+
                 {/* Holdings Table */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col h-[650px]">
                     <div className="flex justify-between items-center mb-6">
@@ -264,6 +276,7 @@ const Dashboard = () => {
                         <table className="w-full text-left border-collapse">
                             <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
                                 <tr className="text-gray-600 uppercase text-[10px] tracking-wider font-bold">
+                                    <th className="px-4 py-3">Brokerage</th>
                                     <th className="px-4 py-3">Symbol</th>
                                     <th className="px-4 py-3">Name</th>
                                     <th className="px-4 py-3 text-right">Qty</th>
@@ -277,6 +290,7 @@ const Dashboard = () => {
                                     const evalValue = item.current_price * item.quantity;
                                     return (
                                         <tr key={idx} className="hover:bg-blue-50/50 transition-colors group">
+                                            <td className="px-4 py-4 text-gray-500 text-xs">{item.brokerage}</td>
                                             <td className="px-4 py-4 font-bold text-gray-900">{item.symbol}</td>
                                             <td className="px-4 py-4 text-gray-500 truncate max-w-[140px]" title={item.name}>{item.name}</td>
                                             <td className="px-4 py-4 text-right font-mono text-gray-600">{item.quantity.toLocaleString()}</td>
@@ -307,9 +321,12 @@ const Dashboard = () => {
     );
 };
 
-function SummaryCard({ title, value, sub, icon, bg, isProfit, textColor = "text-white" }) {
+function SummaryCard({ title, value, sub, icon, bg, isProfit, textColor = "text-white", onClick }) {
     return (
-        <div className={`${bg} p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-visible transition-all`}>
+        <div
+            onClick={onClick}
+            className={`${bg} p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-visible transition-all ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md' : ''}`}
+        >
             <div className="flex justify-between items-start gap-4">
                 <div className="z-10 flex-1 min-w-0">
                     <h3 className={`text-sm font-medium opacity-90 ${textColor === "text-white" ? "text-blue-50" : "text-gray-500"}`}>{title}</h3>

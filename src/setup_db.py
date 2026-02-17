@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.database.engine import engine, Base
-from src.database.models import AssetSnapshot, DepositHistory, DailySummary, TradeLog
+from src.database.models import Instrument, DailyPortfolioSnapshot, DepositHistory, DailySummary, TradeLog, ManualAsset
 
 def init_db():
     print("Creating database tables...")

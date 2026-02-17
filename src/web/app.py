@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from src.web.routers import dashboard, trade
+from src.web.routers import dashboard, trade, assets, returns
 
 from contextlib import asynccontextmanager
 from src.scheduler import start_scheduler
@@ -17,7 +17,7 @@ scheduler = BackgroundScheduler()
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting Scheduler...")
-    scheduler.add_job(snapshot_assets, 'interval', minutes=60, id='hourly_snapshot')
+    # Market-close snapshots only (no more hourly)
     scheduler.add_job(snapshot_assets, CronTrigger(hour=15, minute=40), id='domestic_close')
     scheduler.add_job(snapshot_assets, CronTrigger(hour=6, minute=10), id='overseas_close')
     
@@ -43,6 +43,8 @@ app.add_middleware(
 
 app.include_router(dashboard.router)
 app.include_router(trade.router)
+app.include_router(assets.router)
+app.include_router(returns.router)
 
 @app.get("/")
 def read_root():

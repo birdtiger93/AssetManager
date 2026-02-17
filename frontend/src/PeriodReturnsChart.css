@@ -1,0 +1,195 @@
+/* Period Returns Chart Styling */
+.period-returns-card {
+    width: 100%;
+}
+
+.period-returns-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.period-returns-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.period-selector {
+    display: flex;
+    gap: 0.5rem;
+    background: #f3f4f6;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+}
+
+.period-selector button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.period-selector button.active {
+    background: white;
+    color: #3b82f6;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.period-selector button:hover:not(.active) {
+    color: #111827;
+}
+
+.returns-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.summary-item {
+    flex: 1;
+    min-width: 150px;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.summary-item.portfolio {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    border: none;
+    color: white;
+}
+
+.summary-item .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+}
+
+.summary-item .value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.summary-item .amount {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.summary-item.portfolio .label,
+.summary-item.portfolio .value,
+.summary-item.portfolio .amount {
+    color: white;
+}
+
+.chart-container {
+    margin: 1.5rem 0;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+}
+
+.chart-controls label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.chart-controls input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.breakdown-section {
+    margin-top: 2rem;
+}
+
+.breakdown-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.breakdown-table thead th {
+    text-align: left;
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.breakdown-table tbody td {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.group-by-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+}
+
+.group-by-selector span:first-child {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.group-by-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.group-by-selector input[type="radio"] {
+    cursor: pointer;
+}
+
+.period-returns-loading {
+    padding: 3rem;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.875rem;
+}

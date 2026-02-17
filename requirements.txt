@@ -2,8 +2,10 @@ requests
 pandas
 pyyaml
 sqlalchemy
-fastapi
-uvicorn
+pandas
+requests
+python-dotenv
 apscheduler
-pydantic
+openpyxl
+yfinance>=0.2.52dantic
 python-multipart
