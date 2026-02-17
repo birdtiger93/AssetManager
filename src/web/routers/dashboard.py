@@ -18,27 +18,76 @@ def clean_profit_rate(val):
 @router.get("/summary")
 async def get_dashboard_summary() -> Dict[str, Any]:
     """
-    Returns the aggregated portfolio summary.
+    Returns the aggregated portfolio summary using Integrated Account Balance (CTRP6548R).
     """
     
-    # 1. Overseas
+    # 1. Fetch Integrated Balance (CTRP6548R)
+    dom_api = DomesticAPI()
+    integ_res = dom_api.get_account_balance()
+    
+    asset_classification = {
+        "domestic_stock": {"amount": 0, "profit": 0, "percent": 0},
+        "overseas_stock": {"amount": 0, "profit": 0, "percent": 0},
+        "rp": {"amount": 0, "profit": 0, "percent": 0},
+        "foreign_currency": {"amount": 0, "profit": 0, "percent": 0},
+        "others": {"amount": 0, "profit": 0, "percent": 0}
+    }
+    
+    total_summary = {
+        "total_asset_krw": 0,
+        "total_pl_krw": 0,
+        "total_pchs_krw": 0,
+    }
+
+    if integ_res and integ_res.get("rt_cd") == "0":
+        # Parse Output2 (Totals)
+        out2 = integ_res.get("output2", {})
+        total_summary["total_asset_krw"] = float(out2.get("tot_asst_amt", 0))
+        total_summary["total_pl_krw"] = float(out2.get("evlu_pfls_amt_smtl", 0))
+        total_summary["total_pchs_krw"] = float(out2.get("pchs_amt_smtl", 0))
+        
+        # Parse Output1 (Asset Classes)
+        # Index 0: Domestic Stock
+        # Index 7: RP
+        # Index 8: Overseas Stock
+        # Index 16: Foreign Currency
+        out1 = integ_res.get("output1", [])
+        
+        def parse_category(idx, key):
+            if idx < len(out1):
+                item = out1[idx]
+                asset_classification[key] = {
+                    "amount": float(item.get("evlu_amt", 0)),
+                    "profit": float(item.get("evlu_pfls_amt", 0)),
+                    "percent": float(item.get("whol_weit_rt", 0))
+                }
+
+        parse_category(0, "domestic_stock")
+        parse_category(7, "rp")
+        parse_category(8, "overseas_stock")
+        parse_category(16, "foreign_currency")
+        
+        # Calculate Others: Total - (Stock + OvStock + RP + FX)
+        # Note: 'evlu_amt' for FX (Index 16) might need checking if it is included in total asset correctly. 
+        # Usually total_asset includes everything.
+        
+        tracked_sum = (asset_classification["domestic_stock"]["amount"] + 
+                       asset_classification["overseas_stock"]["amount"] + 
+                       asset_classification["rp"]["amount"] +
+                       asset_classification["foreign_currency"]["amount"])
+                       
+        others_val = total_summary["total_asset_krw"] - tracked_sum
+        if others_val > 100: # Threshold for rounding errors
+             asset_classification["others"]["amount"] = others_val
+             if total_summary["total_asset_krw"] > 0:
+                 asset_classification["others"]["percent"] = (others_val / total_summary["total_asset_krw"]) * 100
+
+    # 2. Fetch Holdings Details (Keep existing logic roughly)
+    # Overseas Holdings
     ov_api = OverseasAPI()
     ov_res = ov_api.get_balance_present()
-    
-    ov_summary = {}
     ov_holdings = []
-    
     if ov_res and ov_res.get("rt_cd") == "0":
-        summary_raw = ov_res.get("output3", {})
-        # Convert scientific notation strings to floats
-        ov_summary = {
-            "total_eval_usd": float(summary_raw.get('evlu_amt_smtl', 0)),
-            "total_pl_usd": float(summary_raw.get('evlu_pfls_amt_smtl', 0)),
-            "total_eval_krw": float(summary_raw.get('evlu_amt_smtl_amt', 0)), # Converted
-            "unrealized_pl_krw": float(summary_raw.get('tot_evlu_pfls_amt', 0)),
-            "return_rate": clean_profit_rate(summary_raw.get('evlu_erng_rt1', 0))
-        }
-        
         for item in ov_res.get("output1", []):
             qty = float(item.get("ccld_qty_smtl1", 0))
             if qty > 0:
@@ -53,30 +102,13 @@ async def get_dashboard_summary() -> Dict[str, Any]:
                     "currency": "USD"
                 })
 
-    # 2. Domestic
-    dom_api = DomesticAPI()
-    dom_res = dom_api.get_balance()
-    
-    dom_summary = {}
+    # Domestic Holdings
+    # We still need to call inquire-balance (TTTC8434R) to get the list of stocks, 
+    # as inquire-account-balance (CTRP6548R) doesn't return list of stocks.
+    dom_res_stocks = dom_api.get_balance()
     dom_holdings = []
-    
-    if dom_res and dom_res.get("rt_cd") == "0":
-        summary_raw = dom_res.get("output2", [])
-        if summary_raw:
-            s = summary_raw[0]
-            dom_summary = {
-                "total_eval_krw": float(s.get('tot_evlu_amt', 0)),
-                "unrealized_pl_krw": float(s.get('evlu_pfls_smtl_amt', 0)),
-                "pchs_amt": float(s.get('pchs_amt_smtl_amt', 0)), # Purchase amount
-            }
-            # Calculate return rate manually if not provided clearly or use provided
-            # domestic API often provides return rate per stock, aggregate might need calculation
-            if dom_summary["pchs_amt"] > 0:
-                 dom_summary['return_rate'] = (dom_summary["unrealized_pl_krw"] / dom_summary["pchs_amt"]) * 100
-            else:
-                 dom_summary['return_rate'] = 0.0
-
-        for item in dom_res.get("output1", []):
+    if dom_res_stocks and dom_res_stocks.get("rt_cd") == "0":
+        for item in dom_res_stocks.get("output1", []):
             qty = float(item.get("hldg_qty", 0))
             if qty > 0:
                 dom_holdings.append({
@@ -90,17 +122,9 @@ async def get_dashboard_summary() -> Dict[str, Any]:
                     "currency": "KRW"
                 })
 
-    # 3. Aggregate
-    total_krw = ov_summary.get("total_eval_krw", 0) + dom_summary.get("total_eval_krw", 0)
-    total_pl_krw = ov_summary.get("unrealized_pl_krw", 0) + dom_summary.get("unrealized_pl_krw", 0)
-    
     return {
-        "summary": {
-            "total_asset_krw": total_krw,
-            "total_pl_krw": total_pl_krw,
-            "overseas": ov_summary,
-            "domestic": dom_summary
-        },
+        "summary": total_summary,
+        "assets": asset_classification,
         "holdings": {
             "overseas": ov_holdings,
             "domestic": dom_holdings

@@ -65,3 +65,17 @@ class DomesticAPI(BaseAPI):
         }
         
         return self.call_api(path, data=data, method="POST", tr_id=tr_id)
+
+    def get_account_balance(self):
+        """Investment Account Asset Status Inquiry (CTRP6548R)"""
+        path = "/uapi/domestic-stock/v1/trading/inquire-account-balance"
+        tr_id = "CTRP6548R"
+        
+        params = {
+            "CANO": self.cano,
+            "ACNT_PRDT_CD": self.acnt_prdt_cd,
+            "INQR_DVSN_1": "",
+            "BSPR_BF_DT_APLY_YN": "N"
+        }
+        
+        return self.call_api(path, params=params, tr_id=tr_id)

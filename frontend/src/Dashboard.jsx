@@ -11,6 +11,7 @@ const Dashboard = () => {
     const [error, setError] = useState(null);
     const [chartView, setChartView] = useState('type'); // 'type' or 'stock'
     const [tableCurrency, setTableCurrency] = useState('original'); // 'original' or 'krw'
+    const [activeIndex, setActiveIndex] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -35,30 +36,69 @@ const Dashboard = () => {
     if (error) return <div className="flex items-center justify-center h-screen text-red-500 font-semibold">{error}</div>;
     if (!data) return null;
 
-    const { summary, holdings } = data;
+    const { summary, assets, holdings } = data;
 
     // 1. Data by Individual Stocks
     const stockData = [
-        ...holdings.overseas.map(h => ({ ...h, value_krw: h.current_price * h.quantity * 1200 })),
+        ...holdings.overseas.map(h => ({ ...h, value_krw: h.current_price * h.quantity * 1400 })), // Approx exchange rate if not provided, or use logic from before if available
         ...holdings.domestic.map(h => ({ ...h, value_krw: h.current_price * h.quantity }))
     ].filter(a => a.value_krw > 0).sort((a, b) => b.value_krw - a.value_krw);
 
-    const topStocks = stockData.slice(0, 7).map(s => ({ name: s.name, value: s.value_krw, color: s.currency === 'USD' ? '#8b5cf6' : '#3b82f6' }));
-    if (stockData.length > 7) {
-        const otherValue = stockData.slice(7).reduce((acc, curr) => acc + curr.value_krw, 0);
-        topStocks.push({ name: 'Others', value: otherValue, color: '#94a3b8' });
+    // Note: Exchange rate hardcoding is risky, but backend provides classification in KRW.
+
+    // Better color palette
+    const CHART_COLORS = ['#2563eb', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6'];
+
+    // For the chart, we still want the grouping logic
+    const topStocks = stockData.slice(0, 10).map((s, idx) => ({
+        name: s.name,
+        value: s.value_krw,
+        color: CHART_COLORS[idx % CHART_COLORS.length],
+        symbol: s.symbol,
+        currency: s.currency
+    }));
+
+    if (stockData.length > 10) {
+        const otherValue = stockData.slice(10).reduce((acc, curr) => acc + curr.value_krw, 0);
+        topStocks.push({ name: 'Others', value: otherValue, color: '#94a3b8', symbol: 'ETC', currency: 'KRW' });
     }
 
-    // 2. Data by Asset Type
-    const typeData = [
-        { name: 'Domestic', value: summary.domestic.total_eval_krw, color: '#3b82f6' },
-        { name: 'Overseas', value: summary.overseas.total_eval_krw, color: '#8b5cf6' }
-    ].filter(item => item.value > 0);
+    // Aggregated Data for Cards
+    const totalStocks = {
+        amount: assets.domestic_stock.amount + assets.overseas_stock.amount,
+        profit: assets.domestic_stock.profit + assets.overseas_stock.profit
+    };
+
+    // Group RP, Foreign Currency, and others into 'Cash'
+    const totalCash = {
+        amount: assets.rp.amount + assets.foreign_currency.amount + assets.others.amount,
+        profit: assets.rp.profit + assets.foreign_currency.profit + assets.others.profit
+    };
+
+    // 2. Data by Asset Type for Chart
+    // Consolidated view: Total Stocks vs Total Cash
+    const typeMapping = [
+        { key: 'stocks', name: 'Stocks', color: '#3b82f6', icon: <Coins size={20} />, value: totalStocks.amount },
+        { key: 'cash', name: 'Cash & Equivalent', color: '#10b981', icon: <Wallet size={20} />, value: totalCash.amount }
+    ];
+
+    // Filter out zero values for chart
+    const typeData = typeMapping.filter(item => item.value > 0);
 
     const currentChartData = chartView === 'type' ? typeData : topStocks;
+    const activeItem = currentChartData[activeIndex] || currentChartData[0];
+    const totalChartValue = currentChartData.reduce((p, c) => p + c.value, 0); // Recalculate based on current view
+    const percentage = activeItem ? ((activeItem.value / totalChartValue) * 100).toFixed(2) : 0;
 
     const formatKRW = (val) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(val);
     const formatUSD = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+
+    // Calculate returns for cards
+    const getReturnRate = (profit, amount) => {
+        const cost = amount - profit;
+        if (cost <= 0) return 0;
+        return (profit / cost) * 100;
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
@@ -89,44 +129,61 @@ const Dashboard = () => {
                     textColor="text-white"
                 />
                 <SummaryCard
-                    title="Overseas (USD)"
-                    value={formatUSD(summary.overseas.total_eval_usd)}
-                    sub={`Return: ${summary.overseas.return_rate.toFixed(2)}%`}
-                    icon={<DollarSign size={24} />}
+                    title="Total Stocks (KRW)"
+                    value={formatKRW(totalStocks.amount)}
+                    sub={`Return: ${getReturnRate(totalStocks.profit, totalStocks.amount).toFixed(2)}%`}
+                    icon={<Coins size={24} />}
                     bg="bg-gradient-to-br from-fuchsia-600 to-purple-700"
                 />
                 <SummaryCard
-                    title="Domestic (KRW)"
-                    value={formatKRW(summary.domestic.total_eval_krw)}
-                    sub={`Return: ${summary.domestic.return_rate.toFixed(2)}%`}
-                    icon={<Coins size={24} />}
+                    title="Total Cash & Equiv."
+                    value={formatKRW(totalCash.amount)}
+                    sub={`Return: ${getReturnRate(totalCash.profit, totalCash.amount).toFixed(2)}%`}
+                    icon={<Wallet size={24} />}
                     bg="bg-gradient-to-br from-emerald-500 to-teal-700"
                 />
             </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Asset Allocation Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1 h-fit">
-                    <div className="flex justify-between items-center mb-6">
+                {/* Asset Allocation Chart (Redesigned) */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1 flex flex-col h-[650px]">
+                    <div className="flex justify-between items-center mb-8">
                         <h2 className="text-xl font-semibold text-gray-700">Allocation</h2>
                         <div className="flex bg-gray-100 p-1 rounded-lg">
                             <button
-                                onClick={() => setChartView('type')}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${chartView === 'type' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+                                onClick={() => { setChartView('stock'); setActiveIndex(0); }}
+                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${chartView === 'stock' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
                             >
-                                Type
+                                By Stock
                             </button>
                             <button
-                                onClick={() => setChartView('stock')}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${chartView === 'stock' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+                                onClick={() => { setChartView('type'); setActiveIndex(0); }}
+                                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${chartView === 'type' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
                             >
-                                Stock
+                                By Type
                             </button>
                         </div>
                     </div>
 
-                    <div className="h-72 flex flex-col items-center justify-center">
+                    {activeItem && (
+                        <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="p-1.5 rounded-full bg-blue-50 text-blue-600">
+                                    {chartView === 'type' ? activeItem.icon : (activeItem.currency === 'USD' ? <DollarSign size={16} /> : <Coins size={16} />)}
+                                </div>
+                                <span className="text-sm font-medium text-gray-500">{activeItem.name}</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-gray-900">{percentage}%</span>
+                            </div>
+                            <div className="text-sm font-medium text-gray-400 mt-0.5">
+                                Evaluation: <span className="text-gray-600 font-bold">{formatKRW(activeItem.value)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="h-64 relative mb-8">
                         {currentChartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -134,34 +191,57 @@ const Dashboard = () => {
                                         data={currentChartData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={70}
-                                        outerRadius={90}
+                                        innerRadius={75}
+                                        outerRadius={95}
                                         paddingAngle={2}
                                         dataKey="value"
-                                        nameKey="name"
+                                        onMouseEnter={(_, index) => setActiveIndex(index)}
+                                        stroke="none"
                                     >
                                         {currentChartData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color || '#3b82f6'} />
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                style={{
+                                                    outline: 'none',
+                                                    cursor: 'pointer',
+                                                    opacity: activeIndex === index ? 1 : 0.8,
+                                                    transition: 'all 0.3s ease'
+                                                }}
+                                            />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(value) => formatKRW(value)} />
-                                    <Legend
-                                        verticalAlign="bottom"
-                                        align="center"
-                                        layout="horizontal"
-                                        iconType="circle"
-                                        wrapperStyle={{ paddingTop: '20px', fontSize: '11px' }}
-                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="text-gray-400 text-sm">No assets found.</div>
+                            <div className="h-full flex items-center justify-center text-gray-400 text-sm">No assets found.</div>
                         )}
+                    </div>
+
+                    {/* Detailed Legend List */}
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                        {currentChartData.map((item, idx) => (
+                            <div
+                                key={idx}
+                                className={`flex items-center justify-between p-2 rounded-lg transition-colors cursor-pointer ${activeIndex === idx ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
+                                onMouseEnter={() => setActiveIndex(idx)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                    <span className={`text-sm font-semibold ${activeIndex === idx ? 'text-blue-700' : 'text-gray-700'}`}>
+                                        {item.name}
+                                    </span>
+                                </div>
+                                <span className="text-sm font-bold text-gray-900">
+                                    {((item.value / totalChartValue) * 100).toFixed(2)}%
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 {/* Holdings Table */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col max-h-[600px]">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col h-[650px]">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-semibold text-gray-700">Holdings</h2>
                         <div className="flex bg-gray-100 p-1 rounded-lg">
