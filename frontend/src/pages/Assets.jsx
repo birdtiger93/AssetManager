@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, TrendingUp, DollarSign, Edit2, X, Check } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Camera, X } from 'lucide-react';
+import ScreenshotUpload from '../components/common/ScreenshotUpload';
+import OCRReviewForm from '../components/forms/OCRReviewForm';
+import '../components/common/OCR.css';
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -8,6 +11,8 @@ const Assets = () => {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [ocrMode, setOcrMode] = useState(null); // null | 'upload' | 'review'
+    const [ocrData, setOcrData] = useState(null);
     const [formData, setFormData] = useState({
         asset_type: 'STOCK',
         name: '',
@@ -62,13 +67,39 @@ const Assets = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this asset?")) return;
+        if (!window.confirm("삭제하시겠습니까?")) return;
         try {
             await axios.delete(`${API_BASE}/api/assets/manual/${id}`);
             fetchAssets();
         } catch (err) {
             console.error("Failed to delete asset", err);
         }
+    };
+
+    // OCR Handlers
+    const handleOcrExtracted = (data) => {
+        setOcrData(data);
+        setOcrMode('review');
+    };
+
+    const handleOcrConfirm = async (items) => {
+        const results = await Promise.allSettled(
+            items.map(item => axios.post(`${API_BASE}/api/assets/manual/`, {
+                asset_type: item.asset_type?.toUpperCase() || 'STOCK',
+                name: item.name,
+                symbol: item.symbol || null,
+                quantity: parseFloat(item.quantity) || 0,
+                buy_price: parseFloat(item.buy_price) || 0,
+                current_price: parseFloat(item.current_price) || 0,
+                currency: item.currency || 'KRW',
+                brokerage: item.brokerage || 'Manual',
+            }))
+        );
+        const failed = results.filter(r => r.status === 'rejected').length;
+        if (failed > 0) alert(`${failed}건 저장 실패. 나머지는 저장되었습니다.`);
+        setOcrMode(null);
+        setOcrData(null);
+        fetchAssets();
     };
 
     const formatCurrency = (val, currency) => {
@@ -87,13 +118,22 @@ const Assets = () => {
                     <TrendingUp size={32} className="text-blue-600" />
                     Manual Assets
                 </h1>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                    <Plus size={20} />
-                    Add Asset
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setOcrMode('upload')}
+                        className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors shadow-sm"
+                    >
+                        <Camera size={18} />
+                        스크린샷으로 추가
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                        <Plus size={20} />
+                        직접 추가
+                    </button>
+                </div>
             </header>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -283,6 +323,29 @@ const Assets = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* OCR Upload Modal */}
+            {ocrMode === 'upload' && (
+                <ScreenshotUpload
+                    mode="assets"
+                    onExtracted={handleOcrExtracted}
+                    onClose={() => setOcrMode(null)}
+                />
+            )}
+
+            {/* OCR Review Modal */}
+            {ocrMode === 'review' && ocrData && (
+                <div className="ocr-upload-overlay">
+                    <div className="ocr-upload-modal" style={{ maxWidth: 640 }}>
+                        <OCRReviewForm
+                            mode="assets"
+                            data={ocrData}
+                            onConfirm={handleOcrConfirm}
+                            onCancel={() => { setOcrMode('upload'); setOcrData(null); }}
+                        />
                     </div>
                 </div>
             )}

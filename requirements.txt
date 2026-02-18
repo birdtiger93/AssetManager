@@ -2,10 +2,13 @@ requests
 pandas
 pyyaml
 sqlalchemy
-pandas
-requests
 python-dotenv
 apscheduler
 openpyxl
-yfinance>=0.2.52dantic
+yfinance>=0.2.52
+pydantic
 python-multipart
+fastapi
+uvicorn
+google-genai>=1.0.0
+pillow>=10.0.0

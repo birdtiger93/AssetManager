@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from src.web.routers import dashboard, trade, assets, returns
+from src.web.routers import dashboard, trade, assets, returns, ocr
 
 from contextlib import asynccontextmanager
 from src.scheduler import start_scheduler
@@ -45,6 +45,7 @@ app.include_router(dashboard.router)
 app.include_router(trade.router)
 app.include_router(assets.router)
 app.include_router(returns.router)
+app.include_router(ocr.router)
 
 @app.get("/")
 def read_root():
