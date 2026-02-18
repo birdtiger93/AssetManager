@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import Dashboard from "./Dashboard";
-import Trade from "./Trade";
-import Assets from "./Assets";
-import ProfitLossPage from "./ProfitLossPage";
+import Dashboard from "./pages/Dashboard";
+import Trade from "./pages/Trade";
+import Assets from "./pages/Assets";
+import ProfitLossPage from "./pages/ProfitLossPage";
 import { LayoutDashboard, TrendingUp, ChevronLeft, ChevronRight, Wallet, ChevronDown, PieChart, LineChart } from "lucide-react";
 
 function AppContent() {

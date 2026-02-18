@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import PeriodReturnsChart from './PeriodReturnsChart';
+import PeriodReturnsChart from '../components/charts/PeriodReturnsChart';
 
 export default function ProfitLossPage() {
     const navigate = useNavigate();
