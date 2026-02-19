@@ -17,8 +17,8 @@ export default function ScreenshotUpload({ mode = "assets", onExtracted, onClose
     const inputRef = useRef(null);
 
     const endpoint = mode === "assets"
-        ? "http://localhost:8000/api/ocr/extract-assets"
-        : "http://localhost:8000/api/ocr/extract-trades";
+        ? "/api/ocr/extract-assets"
+        : "/api/ocr/extract-trades";
 
     const modeLabel = mode === "assets" ? "보유 자산" : "거래 내역";
 

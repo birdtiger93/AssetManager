@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { DollarSign, Send } from 'lucide-react';
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "";
 
 const Trade = () => {
     const [formData, setFormData] = useState({

@@ -5,7 +5,7 @@ import ScreenshotUpload from '../components/common/ScreenshotUpload';
 import OCRReviewForm from '../components/forms/OCRReviewForm';
 import '../components/common/OCR.css';
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "";
 
 const Assets = () => {
     const [assets, setAssets] = useState([]);
