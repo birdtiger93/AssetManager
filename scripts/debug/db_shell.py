@@ -2,7 +2,7 @@ import os
 import sys
 
 # 프로젝트 루트 경로를 PYTHONPATH에 추가
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.database.engine import SessionLocal
 from src.database.models import AssetSnapshot, DailySummary, DepositHistory, TradeLog, AssetType

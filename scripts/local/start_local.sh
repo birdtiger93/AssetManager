@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure script is run from project root
+cd "$(dirname "$0")/../.."
+
 echo "Starting KIS Asset Manager..."
 
 # 1. Start Backend in background
