@@ -62,6 +62,10 @@ api:
 
 ### 3. 설치 (Installation)
 ```bash
+# 간편 설치 (Windows)
+setup.bat
+
+# 또는 수동 설치
 # 백엔드 의존성 설치
 pip install -r requirements.txt
 
